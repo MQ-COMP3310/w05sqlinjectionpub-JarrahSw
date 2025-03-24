@@ -29,7 +29,7 @@ public class App {
 
     private static final Logger logger = Logger.getLogger(App.class.getName());
     // End code for logging exercise
-    
+
     /**
      * @param args the command line arguments
      */
@@ -38,56 +38,63 @@ public class App {
 
         wordleDatabaseConnection.createNewDatabase("words.db");
         if (wordleDatabaseConnection.checkIfConnectionDefined()) {
-            System.out.println("Wordle created and connected.");
+            logger.info("Wordle created and connected.");
         } else {
             System.out.println("Not able to connect. Sorry!");
             return;
         }
         if (wordleDatabaseConnection.createWordleTables()) {
-            System.out.println("Wordle structures in place.");
+            logger.info("Wordle structures in place.");
         } else {
             System.out.println("Not able to launch. Sorry!");
             return;
         }
 
-        // let's add some words to valid 4 letter words from the data.txt file
-
+        // Let's add some words to valid 4-letter words from the data.txt file
         try (BufferedReader br = new BufferedReader(new FileReader("resources/data.txt"))) {
             String line;
             int i = 1;
             while ((line = br.readLine()) != null) {
-                System.out.println(line);
-                wordleDatabaseConnection.addValidWord(i, line);
-                i++;
+                if (line.matches("[a-z]{4}")) {
+                    logger.info("Valid word added: " + line); // Log valid words
+                    wordleDatabaseConnection.addValidWord(i, line);
+                    i++;
+                } else {
+                    logger.severe("Invalid word found in data.txt: " + line); // Log invalid words
+                    i++;
+                }
             }
-
         } catch (IOException e) {
-            System.out.println("Not able to load . Sorry!");
-            System.out.println(e.getMessage());
+            logger.log(Level.WARNING, "Failed to load words from data.txt.", e);
+            System.out.println("Not able to load. Sorry!");
             return;
         }
 
-        // let's get them to enter a word
-
+        // Let's get them to enter a word
         try (Scanner scanner = new Scanner(System.in)) {
             System.out.print("Enter a 4 letter word for a guess or q to quit: ");
             String guess = scanner.nextLine();
 
             while (!guess.equals("q")) {
-                System.out.println("You've guessed '" + guess+"'.");
-
-                if (wordleDatabaseConnection.isValidWord(guess)) { 
-                    System.out.println("Success! It is in the the list.\n");
-                }else{
-                    System.out.println("Sorry. This word is NOT in the the list.\n");
+                System.out.println("You've guessed '" + guess + "'.");
+                if (guess.matches("[a-z]{4}")) {
+                    if (wordleDatabaseConnection.isValidWord(guess)) {
+                        System.out.println("Success! It is in the list.\n");
+                    } else {
+                        System.out.println("Sorry. This word is NOT in the list.\n");
+                    }
+                } else {
+                    logger.warning("Invalid guess: " + guess); // Log invalid guesses
+                    System.out.println("Sorry. This word is NOT valid.\n");
                 }
 
                 System.out.print("Enter a 4 letter word for a guess or q to quit: " );
                 guess = scanner.nextLine();
             }
-        } catch (NoSuchElementException | IllegalStateException e) {
-            e.printStackTrace();
-        }
 
+        } catch (NoSuchElementException | IllegalStateException e) {
+            logger.log(Level.WARNING, "An error occurred during user input handling.", e);
+            System.out.println("An error occurred. Please restart the game.");
+        }
     }
 }
